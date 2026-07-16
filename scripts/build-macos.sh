@@ -39,7 +39,13 @@ app_bundle=$(find apps/desktop/release -maxdepth 3 -type d -name 'Hermes.app' -p
 # Ad-hoc signing keeps the bundle internally consistent. Official Developer ID
 # signing/notarization can be added later through repository secrets without
 # changing the source or packaging architecture.
-codesign --force --deep --sign - "$app_bundle"
+codesign \
+  --force \
+  --deep \
+  --sign - \
+  --timestamp=none \
+  --entitlements apps/desktop/electron/entitlements.mac.plist \
+  "$app_bundle"
 "$repo_root/scripts/verify-app.sh" "$source_dir" "$app_bundle"
 
 zip_path="$output_dir/Hermes-${artifact_label}-mac-arm64.zip"
