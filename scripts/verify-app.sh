@@ -45,10 +45,19 @@ fi
 main_bundle=$(find "$extract_dir" -type f \( -name 'electron-main.mjs' -o -name 'main.cjs' \) -print -quit)
 [[ -n "$main_bundle" ]] || { echo "could not locate packaged Electron main process" >&2; exit 1; }
 
-grep -Fq "remote-only desktop mode enabled" "$main_bundle"
-grep -Fq "http://127.0.0.1:9119" "$main_bundle"
-grep -Fq "cannot start a bundled local gateway" "$main_bundle"
+grep -Fq "remote-only desktop mode enabled" "$main_bundle" || {
+  echo "packaged Electron main process is missing the remote-only startup marker" >&2
+  exit 1
+}
+grep -Fq "cannot start a bundled local gateway" "$main_bundle" || {
+  echo "packaged Electron main process is missing the local-backend guard" >&2
+  exit 1
+}
+grep -RFq "http://127.0.0.1:9119" "$extract_dir" || {
+  echo "packaged client is missing the default gateway URL" >&2
+  exit 1
+}
 
-codesign --verify --deep --strict "$app_bundle"
+codesign --verify --deep --strict --verbose=2 "$app_bundle"
 
 echo "Verified Hermes.app: real Electron UI, remote-only guard present, and no Python backend bundled."
